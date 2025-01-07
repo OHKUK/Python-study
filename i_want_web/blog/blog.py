@@ -62,7 +62,7 @@ def index():
             rx.foreach(State.num_list, rx.text)
         )
     )
-"""
+
 #todolist 완성
 
 class State(rx.State):
@@ -86,11 +86,9 @@ class State(rx.State):
         self.on_edit.pop(idx)
 
     def update_todo(self, x:dict[str:str]):
-        """
         x는 {"0": "new_todo"} 형식의 사전데이터임.
         사전의 키인 "0"을 정수로 바꿔서 인덱스로 활용하고
         사전의 값으로 "할일" 문자열을 업데이트함
-        """
         i, val = x.popitem()
         i = int(i)
         self.todo_list[i] = val
@@ -140,3 +138,41 @@ def index():
 
 app = rx.App()
 app.add_page(index)
+        
+"""
+# 동적 라우팅 사용법
+class Post(rx.Model, table=True):
+    title: str
+    content: str
+    created_at: str
+
+
+class State(rx.State):
+    post: dict
+
+    def get_post(self):
+        with rx.session() as session:
+            try:
+                post = session.exec(
+                    Post.select()
+                    .where(Post.id == self.pid)).first().dict()
+            except AttributeError as e:
+                post = {"error": "해당 포스팅을 찾을 수 없습니다."}
+        self.post = post
+
+
+@rx.page(route="/[pid]", on_load=State.get_post)
+def post():
+    return rx.cond(
+        State.post["error"],
+        rx.text(State.post["error"]),
+        rx.box(
+            rx.heading(State.post["title"], align="center"),
+            rx.divider(),
+            rx.text(State.post["created_at"], size="1", align="right"),
+            rx.text(State.post["content"]),
+        )
+    )
+
+
+app = rx.App()
